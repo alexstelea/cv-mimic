@@ -22,8 +22,13 @@ detector.detectAllAppearance();
 // Unicode values for all emojis Affectiva can detect
 var emojis = [ 128528, 9786, 128515, 128524, 128527, 128521, 128535, 128539, 128540, 128542, 128545, 128563, 128561 ];
 
+var target_emoji = null,
+    correct_faces = 0,
+    faces_seen = 0;
+
 // Update target emoji being displayed by supplying a unicode value
 function setTargetEmoji(code) {
+  target_emoji = code;
   $("#target").html("&#" + code + ";");
 }
 
@@ -73,8 +78,12 @@ function onReset() {
   $('#results').html("");  // clear out results
   $("#logs").html("");  // clear out previous log
 
+
   // TODO(optional): You can restart the game as well
-  // <your code here>
+  correct_faces = 0;
+  faces_seen = 0;
+  setScore(0, 0);
+  setTargetEmoji(generateTargetEmoji())
 };
 
 // Add a callback to notify when camera access is allowed
@@ -102,7 +111,7 @@ detector.addEventListener("onInitializeSuccess", function() {
   $("#face_video").css("display", "none");
 
   // TODO(optional): Call a function to initialize the game, if needed
-  // <your code here>
+  initializeGame()
 });
 
 // Add a callback to receive the results from processing an image
@@ -133,7 +142,7 @@ detector.addEventListener("onImageResultsSuccess", function(faces, image, timest
     drawEmoji(canvas, image, faces[0]);
 
     // TODO: Call your function to run the game (define it first!)
-    // <your code here>
+    runGame(image, faces[0])
   }
 });
 
@@ -147,15 +156,20 @@ function drawFeaturePoints(canvas, img, face) {
 
   // TODO: Set the stroke and/or fill style you want for each feature point marker
   // See: https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D#Fill_and_stroke_styles
-  // <your code here>
-  
+  ctx.fillStyle = 'rgb(200,0,0)';
+  ctx.strokeStyle = 'rgb(200,100,0)';
+
   // Loop over each feature point in the face
   for (var id in face.featurePoints) {
     var featurePoint = face.featurePoints[id];
 
     // TODO: Draw feature point, e.g. as a circle using ctx.arc()
     // See: https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/arc
-    // <your code here>
+    ctx.beginPath();
+    ctx.arc(featurePoint['x'], featurePoint['y'], 1, 0, 90);
+    ctx.stroke();
+    ctx.fill();
+
   }
 }
 
@@ -163,18 +177,39 @@ function drawFeaturePoints(canvas, img, face) {
 function drawEmoji(canvas, img, face) {
   // Obtain a 2D context object to draw on the canvas
   var ctx = canvas.getContext('2d');
+  var featurePoint = face.featurePoints[5];
+  var padding_x = 25;
+  var padding_y = 25;
 
   // TODO: Set the font and style you want for the emoji
   // <your code here>
-  
-  // TODO: Draw it using ctx.strokeText() or fillText()
-  // See: https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/fillText
-  // TIP: Pick a particular feature point as an anchor so that the emoji sticks to your face
-  // <your code here>
+    ctx.fillStyle = 'rgb(200,0,0)';
+    ctx.font = '48px serif';
+
+    // TODO: Draw it using ctx.strokeText() or fillText()
+    ctx.fillText(face.emojis.dominantEmoji, featurePoint['x'] - padding_x, featurePoint['y'] - padding_y)
+
+    // See: https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/fillText
+    // TIP: Pick a particular feature point as an anchor so that the emoji sticks to your face
+
 }
 
 // TODO: Define any variables and functions to implement the Mimic Me! game mechanics
+function initializeGame() {
+    setTargetEmoji(emojis[Math.floor(Math.random()*emojis.length)])
+}
 
+function runGame(img, face) {
+    if (toUnicode(face.emojis.dominantEmoji) === target_emoji) {
+      setScore(++correct_faces, ++faces_seen);
+      setTargetEmoji(generateTargetEmoji())
+        // generate next face
+    }
+}
+
+function generateTargetEmoji() {
+    return emojis[Math.floor(Math.random()*emojis.length)];
+}
 // NOTE:
 // - Remember to call your update function from the "onImageResultsSuccess" event handler above
 // - You can use setTargetEmoji() and setScore() functions to update the respective elements
